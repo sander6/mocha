@@ -22,7 +22,7 @@ class IncludesTest < Test::Unit::TestCase
     assert_equal "includes(:x)", matcher.mocha_inspect
   end
   
-  def test_should_not_raise_error_on_emtpy_arguments
+  def test_should_not_raise_error_on_empty_arguments
     matcher = includes(:x)
     assert_nothing_raised { matcher.matches?([]) }
   end
@@ -40,5 +40,34 @@ class IncludesTest < Test::Unit::TestCase
   def test_should_not_match_on_argument_that_does_not_respond_to_include
     matcher = includes(:x)
     assert !matcher.matches?([:x])
+  end
+  
+  def test_should_match_on_object_matching_embedded_matcher
+    matcher = includes(includes(:x))
+    collection = [ [:a, :b, :c], [:x, :y, :z] ]
+    assert matcher.matches?([collection])
+  end
+  
+  def test_should_not_match_on_object_not_matching_embedded_matcher
+    matcher = includes(includes(:x))
+    collection = [ [:a, :b, :c], [1, 2, 3] ]
+    assert !matcher.matches?([collection])
+  end
+  
+  def test_should_not_raise_error_on_argument_that_does_not_respond_to_any_when_matching_against_embedded_matcher
+    matcher = includes(includes(:x))
+    obj = Object.new
+    assert_nothing_raised { matcher.matches?([obj]) }
+  end
+  
+  def test_should_not_match_on_argument_that_does_not_respond_to_any_when_matching_against_embedded_matcher
+    matcher = includes(includes(:x))
+    obj = Object.new
+    assert !matcher.matches?([obj])
+  end
+  
+  def test_should_describe_matcher_with_embedded_matcher
+    matcher = includes(includes(:x))
+    assert_equal 'includes(includes(:x))', matcher.mocha_inspect
   end
 end

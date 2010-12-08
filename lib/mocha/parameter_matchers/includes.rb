@@ -26,8 +26,11 @@ module Mocha
 
       def matches?(available_parameters)
         parameter = available_parameters.shift
-        return false unless parameter.respond_to?(:include?)
-        return parameter.include?(@item)
+        if ParameterMatchers::Base === @item
+          parameter.respond_to?(:any?) ? parameter.any? { |e| @item.matches?([e]) } : false
+        else
+          parameter.respond_to?(:include?) ? parameter.include?(@item) : false
+        end
       end
 
       def mocha_inspect
