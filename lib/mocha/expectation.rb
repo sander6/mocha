@@ -1,6 +1,7 @@
 require 'mocha/method_matcher'
 require 'mocha/parameters_matcher'
 require 'mocha/expectation_error'
+require 'mocha/ambiguous_return_error'
 require 'mocha/return_values'
 require 'mocha/exception_raiser'
 require 'mocha/yield_parameters'
@@ -279,8 +280,13 @@ module Mocha # :nodoc:
     #   x, y = object.expected_method
     #   x # => 1
     #   y # => 2
-    def returns(*values)
-      @return_values += ReturnValues.build(*values)
+    def returns(*values, &block)
+      if block_given?
+        raise Mocha::AmbiguousReturnError unless values.empty?
+        @return_values += ReturnValues.new(SingleReturnValue.new(nil, &block))
+      else
+        @return_values += ReturnValues.build(*values)
+      end
       self
     end
 

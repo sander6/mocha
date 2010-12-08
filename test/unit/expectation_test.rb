@@ -152,8 +152,24 @@ class ExpectationTest < Test::Unit::TestCase
     assert_equal 99, expectation.invoke
   end
   
+  def test_should_return_result_of_trivial_block
+    expectation = new_expectation.returns { 99 }
+    assert_equal 99, expectation.invoke
+  end
+  
+  def test_should_return_result_of_block_given_invocation_parameters
+    expectation = new_expectation.returns { |x| x + 1 }
+    assert_equal 100, expectation.invoke(99)
+  end
+  
   def test_should_return_same_specified_value_multiple_times
     expectation = new_expectation.returns(99)
+    assert_equal 99, expectation.invoke
+    assert_equal 99, expectation.invoke
+  end
+  
+  def test_should_return_same_value_of_trivial_block_multiple_times
+    expectation = new_expectation.returns { 99 }
     assert_equal 99, expectation.invoke
     assert_equal 99, expectation.invoke
   end
@@ -165,6 +181,13 @@ class ExpectationTest < Test::Unit::TestCase
     assert_equal 101, expectation.invoke
   end
   
+  def test_should_return_value_of_block_given_invocation_parameters_on_consecutive_calls
+    expectation = new_expectation.returns { |x| x + 1 }
+    assert_equal 100, expectation.invoke(99)
+    assert_equal 101, expectation.invoke(100)
+    assert_equal 102, expectation.invoke(101)
+  end
+  
   def test_should_return_specified_values_on_consecutive_calls_even_if_values_are_modified
     values = [99, 100, 101]
     expectation = new_expectation.returns(*values)
@@ -174,6 +197,10 @@ class ExpectationTest < Test::Unit::TestCase
     assert_equal 101, expectation.invoke
   end
   
+  def test_should_raise_ambiguous_return_error_if_given_a_block_and_static_return_values
+    assert_raises(Mocha::AmbiguousReturnError) { new_expectation.returns(99) { |x| x + 1 } }
+  end
+
   def test_should_return_nil_by_default
     assert_nil new_expectation.invoke
   end
