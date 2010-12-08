@@ -434,7 +434,7 @@ module Mocha # :nodoc:
       @cardinality.satisfied?(@invocation_count)
     end
 
-    def invoke
+    def invoke(*arguments)
       @invocation_count += 1
       perform_side_effects()
       if block_given? then
@@ -442,7 +442,7 @@ module Mocha # :nodoc:
           yield(*yield_parameters)
         end
       end
-      @return_values.next
+      @return_values.next(*arguments)
     end
 
     def verified?(assertion_counter = nil)

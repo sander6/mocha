@@ -14,11 +14,11 @@ module Mocha # :nodoc:
       @values = values
     end
     
-    def next
+    def next(*arguments)
       case @values.length
         when 0 then nil
-        when 1 then @values.first.evaluate
-        else @values.shift.evaluate
+        when 1 then @values.first.evaluate(*arguments)
+        else @values.shift.evaluate(*arguments)
       end
     end
     
