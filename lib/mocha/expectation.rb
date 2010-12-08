@@ -5,6 +5,7 @@ require 'mocha/ambiguous_return_error'
 require 'mocha/return_values'
 require 'mocha/exception_raiser'
 require 'mocha/yield_parameters'
+require 'mocha/symbol_thrower'
 require 'mocha/is_a'
 require 'mocha/in_state_ordering_constraint'
 require 'mocha/change_state_side_effect'
@@ -313,6 +314,22 @@ module Mocha # :nodoc:
     #   object.expected_method # => 3
     def raises(exception = RuntimeError, message = nil)
       @return_values += ReturnValues.new(ExceptionRaiser.new(exception, message))
+      self
+    end
+
+    # :call-seq: throws(symbol) -> expectation
+    #            throws(symbol, object) -> expectation
+    #
+    # Modifies expectation so that when the expected method is called, it throws the specified +symbol+ i.e. calls Kernel#throw(symbol).
+    #   object = mock()
+    #   object.expects(:expected_method).throws(:symbol)
+    #   object.expected_method # => throws :symbol, which could cause a NameError for an uncaught throw
+    # May be given a object to throw; this will be the return value of the surrounding 'catch' block.
+    #   object = mock()
+    #   object.expects(:expected_method).throws(:symbol, value) # +value+ here can be any object
+    #   catch(:symbol) { object.expected_method } # => value
+    def throws(symbol, object = nil)
+      @return_values += ReturnValues.new(SymbolThrower.new(symbol, object))
       self
     end
 
