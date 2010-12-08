@@ -4,6 +4,11 @@ module Mocha
 
   class AnyInstanceMethod < ClassMethod
   
+    def initialize(stubbee, method)
+      super
+      @original_method = nil
+    end
+  
     def unstub
       remove_new_method
       restore_original_method
@@ -17,9 +22,10 @@ module Mocha
     def hide_original_method
       if method_exists?(method)
         begin
-          stubbee.send(:alias_method, hidden_method, method)
+          @original_method = stubbee.instance_method(method)
+          stubbee.send(:remove_method, method)
         rescue NameError
-          # deal with nasties like ActiveRecord::Associations::AssociationProxy
+          @original_method = nil
         end
       end
     end
@@ -33,18 +39,19 @@ module Mocha
     end
 
     def remove_new_method
-      stubbee.send(:remove_method, method)
+      stubbee.send(:remove_method, method) rescue nil
     end
 
     def restore_original_method
-      if method_exists?(hidden_method)
-        begin
-          stubbee.send(:alias_method, method, hidden_method)
-          stubbee.send(:remove_method, hidden_method)
-        rescue NameError
-          # deal with nasties like ActiveRecord::Associations::AssociationProxy
-        end
-      end
+      stubbee.send :define_method, method, @original_method if @original_method
+      # if method_exists?(hidden_method)
+      #   begin
+      #     stubbee.send(:alias_method, method, hidden_method)
+      #     stubbee.send(:remove_method, hidden_method)
+      #   rescue NameError
+      #     # deal with nasties like ActiveRecord::Associations::AssociationProxy
+      #   end
+      # end
     end
 
     def method_exists?(method)

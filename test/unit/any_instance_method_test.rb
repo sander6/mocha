@@ -14,17 +14,15 @@ class AnyInstanceMethodTest < Test::Unit::TestCase
     
     method.hide_original_method
     
-    assert klass.method_defined?(hidden_method_x)
+    assert !klass.method_defined?(:method_x)
   end
-  
+    
   def test_should_not_hide_original_method_if_it_is_not_defined
     klass = Class.new
     method = AnyInstanceMethod.new(klass, :method_x)
-    hidden_method_x = method.hidden_method.to_sym
     
-    method.hide_original_method
-    
-    assert_equal false, klass.method_defined?(hidden_method_x)
+    assert_nothing_raised { method.hide_original_method }
+    assert_equal nil, method.instance_variable_get(:@original_method)
   end
   
   def test_should_define_a_new_method
@@ -47,24 +45,24 @@ class AnyInstanceMethodTest < Test::Unit::TestCase
   end
 
   def test_should_restore_original_method
-    klass = Class.new { def method_x; end }
+    klass = Class.new { def method_x; :original_result; end }
     method = AnyInstanceMethod.new(klass, :method_x)
-    hidden_method_x = method.hidden_method.to_sym
-    klass.send(:define_method, hidden_method_x, Proc.new { :original_result }) 
+    instance = klass.new
+    
+    method.hide_original_method
+    assert_raises(NoMethodError) { instance.method_x }
     
     method.remove_new_method
     method.restore_original_method
     
-    instance = klass.new
-    assert_equal :original_result, instance.method_x 
-    assert !klass.method_defined?(hidden_method_x)
+    assert_equal :original_result, instance.method_x
   end
 
   def test_should_not_restore_original_method_if_hidden_method_not_defined
     klass = Class.new { def method_x; :new_result; end }
     method = AnyInstanceMethod.new(klass, :method_x)
     
-    method.restore_original_method
+    assert_nothing_raised { method.restore_original_method }
     
     instance = klass.new
     assert_equal :new_result, instance.method_x 
