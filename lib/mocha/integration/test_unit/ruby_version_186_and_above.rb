@@ -9,6 +9,9 @@ module Mocha
     module TestUnit
       
       module RubyVersion186AndAbove
+        def self.included(mod)
+          $stderr.puts "Monkey patching Test::Unit for Ruby >= v1.8.6" if $options['debug']
+        end
         def run(result)
           assertion_counter = AssertionCounter.new(result)
           yield(Test::Unit::TestCase::STARTED, name)

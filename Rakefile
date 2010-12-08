@@ -3,7 +3,7 @@ require 'rake/gempackagetask'
 require 'rake/testtask'
 
 module Mocha
-  VERSION = "0.9.7"
+  VERSION = "0.9.10"
 end
 
 desc "Run all tests"
@@ -42,8 +42,8 @@ namespace 'test' do
 
   desc "Run performance tests"
   task 'performance' do
-    require 'test/acceptance/stubba_example_test'
-    require 'test/acceptance/mocha_example_test'
+    require File.join(File.dirname(__FILE__), 'test', 'acceptance', 'stubba_example_test')
+    require File.join(File.dirname(__FILE__), 'test', 'acceptance', 'mocha_example_test')
     iterations = 1000
     puts "\nBenchmarking with #{iterations} iterations..."
     [MochaExampleTest, StubbaExampleTest].each do |test_case|
@@ -55,27 +55,33 @@ end
 
 def benchmark_test_case(klass, iterations)
   require 'benchmark'
-  require 'test/unit/ui/console/testrunner'
-  begin
-    require 'test/unit/ui/console/outputlevel'
-    silent_option = { :output_level => Test::Unit::UI::Console::OutputLevel::SILENT }
-  rescue LoadError
-    silent_option = Test::Unit::UI::SILENT
+  load 'test/unit/ui/console/testrunner.rb' unless defined?(Test::Unit::UI::Console::TestRunner)
+  unless $silent_option
+    begin
+      load 'test/unit/ui/console/outputlevel.rb' unless defined?(Test::Unit::UI::Console::OutputLevel::SILENT)
+      $silent_option = { :output_level => Test::Unit::UI::Console::OutputLevel::SILENT }
+    rescue LoadError
+      $silent_option = Test::Unit::UI::SILENT
+    end
   end
-  time = Benchmark.realtime { iterations.times { Test::Unit::UI::Console::TestRunner.run(klass, silent_option) } }
+  time = Benchmark.realtime { iterations.times { Test::Unit::UI::Console::TestRunner.run(klass, $silent_option) } }
 end
 
 desc 'Generate RDoc'
 Rake::RDocTask.new('rdoc') do |task|
-  task.main = 'README'
+  task.main = 'README.rdoc'
   task.title = "Mocha #{Mocha::VERSION}"
   task.rdoc_dir = 'doc'
-  task.template = File.expand_path(File.join(File.dirname(__FILE__), "templates", "html_with_google_analytics"))
+  template = File.expand_path(File.join(File.dirname(__FILE__), "templates", "html_with_google_analytics.rb"))
+  if File.exist?(template)
+    puts "*** Using RDoc template incorporating Google Analytics"
+    task.template = template
+  end
   task.rdoc_files.include(
-    'README',
-    'RELEASE',
-    'COPYING',
-    'MIT-LICENSE',
+    'README.rdoc',
+    'RELEASE.rdoc',
+    'COPYING.rdoc',
+    'MIT-LICENSE.rdoc',
     'agiledox.txt',
     'lib/mocha/api.rb',
     'lib/mocha/mock.rb',
@@ -152,8 +158,8 @@ def build_specification(version = Mocha::VERSION)
     s.rubyforge_project = 'mocha'
 
     s.has_rdoc = true
-    s.extra_rdoc_files = ['README', 'COPYING']
-    s.rdoc_options << '--title' << 'Mocha' << '--main' << 'README' << '--line-numbers'
+    s.extra_rdoc_files = ['README.rdoc', 'COPYING.rdoc']
+    s.rdoc_options << '--title' << 'Mocha' << '--main' << 'README.rdoc' << '--line-numbers'
 
     s.add_dependency('rake')
     s.files = FileList['{lib,test,examples}/**/*.rb', '[A-Z]*'].exclude('TODO').to_a
@@ -168,7 +174,7 @@ Rake::GemPackageTask.new(specification) do |package|
 end
 
 desc 'Generate updated gemspec with unique version, which will cause gem to be auto-built on github.'
-task :update_gemspec do
+task :gemspec do
   File.open('mocha.gemspec', 'w') do |output|
     output << build_specification(Mocha::VERSION + '.' + Time.now.strftime('%Y%m%d%H%M%S')).to_ruby
   end
@@ -203,7 +209,7 @@ task 'publish_packages' => ['verify_user', 'verify_password', 'clobber_package',
 end
 
 desc "Do a full release."
-task 'release' => ['default', 'generate_docs', 'publish_packages', 'publish_docs', 'update_gemspec'] do
+task 'release' => ['default', 'generate_docs', 'publish_packages', 'publish_docs', 'gemspec'] do
   puts
   puts "*** Remember to commit newly generated gemspec after release ***"
   puts

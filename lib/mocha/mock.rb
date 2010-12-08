@@ -2,11 +2,11 @@ require 'mocha/expectation'
 require 'mocha/expectation_list'
 require 'mocha/metaclass'
 require 'mocha/names'
-require 'mocha/mockery'
 require 'mocha/method_matcher'
 require 'mocha/parameters_matcher'
 require 'mocha/unexpected_invocation'
 require 'mocha/argument_iterator'
+require 'mocha/mockery'
 
 module Mocha # :nodoc:
   
@@ -158,6 +158,7 @@ module Mocha # :nodoc:
         matching_expectation_allowing_invocation.invoke(&block)
       else
         if (matching_expectation = @expectations.match(symbol, *arguments)) || (!matching_expectation && !@everything_stubbed)
+          matching_expectation.invoke(&block) if matching_expectation
           message = UnexpectedInvocation.new(self, symbol, *arguments).to_s
           message << Mockery.instance.mocha_inspect
           raise ExpectationError.new(message, caller)
