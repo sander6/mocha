@@ -7,6 +7,7 @@ module Mocha
     def initialize(stubbee, method)
       super
       @original_method = nil
+      @original_method_visibility = :public
     end
   
     def unstub
@@ -23,6 +24,13 @@ module Mocha
       if method_exists?(method)
         begin
           @original_method = stubbee.instance_method(method)
+          @original_method_visibility = if stubbee.private_method_defined?(method)
+            :private
+          elsif stubbee.protected_method_defined?(method)
+            :protected
+          else
+            :public
+          end
           stubbee.send(:remove_method, method)
         rescue NameError
           @original_method = nil
@@ -39,19 +47,14 @@ module Mocha
     end
 
     def remove_new_method
-      stubbee.send(:remove_method, method) rescue nil
+      stubbee.send(:remove_method, method) if @original_method rescue nil
     end
 
     def restore_original_method
       stubbee.send :define_method, method, @original_method if @original_method
-      # if method_exists?(hidden_method)
-      #   begin
-      #     stubbee.send(:alias_method, method, hidden_method)
-      #     stubbee.send(:remove_method, hidden_method)
-      #   rescue NameError
-      #     # deal with nasties like ActiveRecord::Associations::AssociationProxy
-      #   end
-      # end
+      if @original_method_visibility != :public
+        stubbee.send @original_method_visibility, method
+      end
     end
 
     def method_exists?(method)
