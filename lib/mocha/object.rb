@@ -179,7 +179,15 @@ module Mocha
       def stubba_object
         @stubba_object
       end
-    
+
+      def unstub(*method_names)
+        mockery = Mocha::Mockery.instance
+        method_names.collect! { |name| name.to_s }
+        mockery.stubba.stubba_methods.select do |m|
+          m.is_a?(Mocha::AnyInstanceMethod) && m.stubbee == self.stubba_object
+        end.select { |m| method_names.include?(m.method.to_s) }.each { |s| s.unstub }
+      end
+
       def method_exists?(method, include_public_methods = true)
         if include_public_methods
           return true if @stubba_object.public_instance_methods(include_superclass_methods = true).include?(method)
