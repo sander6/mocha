@@ -105,6 +105,22 @@ class StubAnyInstanceMethodTest < Test::Unit::TestCase
     assert_equal :original_return_value, instance.my_superclass_method
   end
   
+  def test_should_be_able_to_stub_a_module_method
+    mod = Module.new do
+      def my_module_method
+        :original_return_value
+      end
+    end
+    klass = Class.new { include mod }
+    instance = klass.new
+    test_result = run_as_test do
+      klass.any_instance.stubs(:my_module_method).returns(:new_return_value)
+      assert_equal :new_return_value, instance.my_module_method
+    end
+    assert_passed(test_result)
+    assert_equal :original_return_value, instance.my_module_method
+  end
+  
   def test_should_be_able_to_stub_method_if_ruby18_public_instance_methods_include_method_but_method_does_not_actually_exist_like_active_record_association_proxy
     ruby18_klass = Class.new do
       class << self
