@@ -47,13 +47,15 @@ module Mocha
     end
 
     def remove_new_method
-      stubbee.send(:remove_method, method) if @original_method rescue nil
+      stubbee.send(:remove_method, method) rescue nil
     end
 
     def restore_original_method
-      stubbee.send :define_method, method, @original_method if @original_method
-      if @original_method_visibility != :public
-        stubbee.send @original_method_visibility, method
+      if @original_method
+        stubbee.send :define_method, method, @original_method
+        if @original_method_visibility != :public
+          stubbee.send @original_method_visibility, method
+        end
       end
     end
 
